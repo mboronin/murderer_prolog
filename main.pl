@@ -1,6 +1,7 @@
 /*
 To start the program type 'start.'
-To test the program consult it, and then run consult test.pl
+To test the program consult this file, and then run consult test.pl
+To run tests use 'test1.' 'test2.' etc.
 */
 
 % Random is used for murderer selection
@@ -50,7 +51,6 @@ instructions :-
 	write('============================================================='),
     nl,
     % generation of all possible person combination
-    generate_people,
     printAttributes,
     write('Clear now? '), nl,
     write('Yes, I get it! - Select 1'),nl,
@@ -76,6 +76,7 @@ start :-
     retractall(suspect(X,Y,Z)),
     retractall(murderer(X,Y,Z)),
     retractall(latest(P)),
+    generate_people,
     instructions,
     %Read and check the incorrect input
     read_input('Type your choice below', IntroReply, check_intro_reply, 'Incorrect Input, try again: '),
@@ -127,7 +128,7 @@ exit :-
     write('You have used '),
     clues(X),
 	write(X),
-    write(' number of clues'),
+    write(' clue(-s)'),
     nl,
     write('We are ending the game now. See you next time!'),
     nl.
@@ -194,6 +195,7 @@ menu :- repeat,
 */
 get_clue :-
     findall((X,Y,Z), person(X,Y,Z), List),
+    list_empty(List, false),
     random_member((X,Y,Z), List),
     innocent_or_suspect(X,Y,Z,Message),
     write(person(X,Y,Z)),
@@ -205,6 +207,10 @@ get_clue :-
 	assert(clues(W)),
     retract(person(X,Y,Z)).
 
+get_clue :-
+    findall((X,Y,Z), person(X,Y,Z), List),
+    list_empty(List, true),
+    write('No more clues left').
 /*
 @descr Checking if the person is innocent or suspect
        Murderer is considered as suspect, as it happens in real life
@@ -241,7 +247,7 @@ doit(2) :-
     age_gender(Age),
     print_list(Age),
     nl,
-    read_input('Type below', Param1, check_guess_reply, 'Incorrect Input, try again'),
+    read_input('Type below', Param1, check_guess_reply, 'There is no such option, try again'),
     nl,
     write('Input the second parameter for your guess: '),
     nl,
@@ -249,7 +255,7 @@ doit(2) :-
     colour(Colour),
     print_list(Colour),
     nl,
-    read_input('Type below', Param2, check_guess_reply, 'Incorrect Input, try again'),
+    read_input('Type below', Param2, check_guess_reply, 'There is no such option, try again'),
     nl,
     write('Input the third parameter for your guess: '),
     nl,
@@ -257,13 +263,11 @@ doit(2) :-
     weapon(Weapon),
     print_list(Weapon),
     nl,
-    read_input('Type below', Param3, check_guess_reply, 'Incorrect Input, try again'),
+    read_input('Type below', Param3, check_guess_reply, 'There is no such option, try again'),
     nl,
     make_guess(person(Param1,Param2,Param3)).
 doit(3) :-
-    latest(P),
-	printPredicate(P),
-    nl,
+    printLatest,
     menu.
 doit(4) :-
     printSuspects,
@@ -273,6 +277,15 @@ doit(5) :-
     menu.
 doit(6) :-
     exit.
+
+printLatest :-
+    clues(X),
+    X > 0,
+    latest(P),
+	printPredicate(P).
+printLatest :-
+    write('You have not used any clues so far'),
+    nl.
 
 /*
 @descr Printing all the suspects, from the queried clues
@@ -373,7 +386,8 @@ printPredicate(P) :-
     List = [X|Tail],
     print_list(Tail),
     write(' - '),
-    write(X).
+    write(X),
+    nl.
 
 /*
 @descr Reading input and checking if it is correct
