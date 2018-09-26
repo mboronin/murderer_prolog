@@ -13,9 +13,8 @@ Prevent the faults.
 Assert the murderer to the 
 Show the number of tries in the end
 Store only murderers attributes, not the murderer itself
+
 */
-
-
 :- use_module(library(random)).
 
 % Include the necessary predicates.
@@ -26,34 +25,81 @@ Store only murderers attributes, not the murderer itself
 :- dynamic murderer/3.
 :- dynamic innocent/3.
 :- dynamic suspect/3.
+:- dynamic latest/1.
 
+%game instructions
 instructions :-
-    write('Rule introduction - A person was murdered, and the murderer hides in the list of following people as a secret until the end of game. 
-            Each person in the list has a unique combination of attributes, and in the list you can see those attributes. Find out who the murderer is and
-            you will get a result \'suspect\' or \'innocent\' until you\'re ready to guess who the murder is. A person is considered a \'suspect\' if at least one 
-            attribute matches of the murderer. A person is considered to an ‘innocent’ if at no attributes matches the murderer’s. Clear now?'),nl,
+    %print game introduction
+    write('================================================================='),nl,
+    write('===    Rule introduction - A person was murdered, and the     ==='),nl,
+    write('===    murderer hides in the list of following people         ==='),nl,
+    write('===    as a secret until the end of game.                     ==='),nl,
+    write('===    Each person in the list has a unique combination       ==='),nl,
+    write('===    of attributes, and in the list you can see             ==='),nl,
+    write('===    those attributes. Find out who the murderer            ==='),nl,
+    write('===    is and you will get a result \'suspect\' or            ==='),nl,
+    write('===    \'innocent\' until you\'re ready to guess who          ==='),nl,
+    write('===    the murder is. A person is considered a \'suspect\'    ==='),nl,
+    write('===    if at least one attribute matches of the murderer.     ==='),nl,
+    write('===    A person is considered to an \'innocent\' if at        ==='),nl,
+    write('===    no attributes matches the murderer\'s                  ==='),
+    nl,
+    %printing all the possible attributes
+    generate_people,
+    printAttributes,
+    write('Clear now? '), nl,
     write('Yes, I get it! - Select 1'),nl,
-    write('No, I haven\'t known the rule clearly. - Select 2'),nl,
-    %TODO Print all the possible options, like three lists
+    write('No, I haven\'t known the rule clearly. - Select 2'),
+    nl.
+
+list_empty([], true).
+list_empty([_|_], false).
+
 
 init :-
+    retractall(person(X,Y,Z)),
+    retractall(innocent(X,Y,Z)),
+    retractall(suspect(X,Y,Z)),
+    retractall(murderer(X,Y,Z)),
     instructions,
+    %ask user for choice
     read(Choice),
+    %do functions upon the user choice
     start(Choice).
 
+%start the game
 start(X) :-
     X =:= 1,
     play.
 
+%leave the game as user did not get the rules
 start(X) :-
     X =:= 2,
-    exit.
+    exit_before_start.
+
+exit_before_start :-
+    write('We can\'t continue the game for now, read the manual once again'),
+    nl.
 
 exit :-
-    write('You decided to exit the game! See you next time!')
+    write('You have got '),
+    findall((X,Y,Z), (innocent(X,Y,Z); suspect(X,Y,Z)), List),
+    count(List, Num),
+    write(Num),
+    write(' number of clues'),
+    nl,
+    write('We are ending the game now. See you next time!'),
+    nl.
 
+count([],0).
+count([H|Tail], N) :-
+    count(Tail, N1),
+    (  number(H)
+    -> N is N1 + 1
+    ;  N = N1
+    ).
 
-generate_people(List):-
+generate_people :-
     age_gender(Age),
     colour(Colour),
     weapon(Weapon),
@@ -64,19 +110,19 @@ generate_people(List):-
     fail;
     true.
 
+remove(latest(P)) :-
+    retract(latest(P)) ; retractall(latest(P)).
+
+
 % Program selects random person from all the combinations and makes him a murderer
 select_murderer :-
     %How to find person 
-    findall(person(A,B,C), person(A,B,C), List),
-    random_member(M(A,B,C), List),
-    A = Param1,
-    B = Param2,
-    C = Param3,
-    assertz(murderer(Param1,Param2,Param3)).
+    findall((A,B,C), person(A,B,C), List),
+    random_member((A,B,C), List),
+    assertz(murderer(A,B,C)).
 
 play :-
-    generate_people(List),
-    select_murderer
+    select_murderer,
     menu.
 
 % TODO TO MAKE A GUESS?
@@ -86,90 +132,155 @@ menu :- repeat,
     write('To ask for a new clue - Select 1'),nl,
     write('To guess the murderer - Select 2'),nl,
     write('To view the last clue - Select 3'),nl,
-    write('To view all suspects - Select 4'),nl,
+    write('To view all suspects  - Select 4'),nl,
     write('To view all innocents - Select 5'),nl,
-    write('To exit the game - Select 6'),nl,
-    write('======================================',),nl,
+    write('To exit the game      - Select 6'),nl,
+    write('======================================'),nl,
     write('Enter your choice here: '),
     read(Choice), Choice>0, Choice =<6,
-    % What is cut doing here? is this one repeating?
+    %TODO Remove repeating of Menu for 2 and 6
+
+    doit(Choice), Choice=2, !.
     doit(Choice), Choice=6, !.
 
-%Get only one
+%Get only one person
 get_clue :-
     person(X,Y,Z),
-    !,
-    innocent_or_suspect(X,Y,Z).
+    innocent_or_suspect(X,Y,Z,Message),
+    write(person(X,Y,Z)),
+    write(' - '),
+    write(Message),nl,
+    retract(person(X,Y,Z)).
 
-innocent_or_suspect(X,Y,Z) :-
-    findall(person, person(A,B,C))
+
+innocent_or_suspect(X,Y,Z, 'Suspect') :-
+    murderer(Q,W,E),
+    (X == Q; Y == W; Z==E),
+    assert(suspect(X,Y,Z)),
+    remove(latest(P)).
+    assert(latest(suspect(X,Y,Z))).
+
+innocent_or_suspect(X,Y,Z, 'Innocent') :-
+    murderer(Q,W,E),
+    X \== Q, Y \== W, Z\==E,
+    assert(innocent(X,Y,Z)),
+    remove(latest(P)),
+    assert(latest(innocent(X,Y,Z))).
+
 
 % TODO Implement all the actions
 doit(1) :-
-    get_clue.
+    get_clue,
+    menu.
 doit(2) :-
     % TODO Make it variable arguements
+    %TODO Make go back
     write('Input the first parameters for your guess: '),
+    nl,
+    write('Available options are: '),
+    age_gender(Age),
+    print_list(Age),
+    nl,
     read(Param1),
     nl,
     write('Input the second parameter for your guess: '),
+    nl,
+    write('Available options are: '),
+    colour(Colour),
+    print_list(Colour),
+    nl,
     read(Param2),
     nl,
     write('Input the third parameter for your guess: '),
+    nl,
+    write('Available options are: '),
+    weapon(Weapon),
+    print_list(Weapon),
+    nl,
     read(Param3), 
     nl,
-    make_guess(Person(Param1, Param2, Param3)).
-    %TODO If make guess is true, then success
+    make_guess(person(Param1,Param2,Param3)).
 doit(3) :-
-    %getlastassert
+    %TODO printPredicate funiction
+    %TODO fix printing correct answer.
+    latest(P),
+    printPredicate(P),
+    nl.
 doit(4) :-
-    %findall
+    printSuspects,
+    menu.
 doit(5) :-
-    %findall
+    printInnocents,
+    menu.
 doit(6) :-
-    %TODO Find out how to exit the game
+    exit.
 
 
 
 %TODO Printing all attributes, regarding the names in the begining
 printSuspects :-
-    findall(X,validSuspect(X),L1),
-    write_ln('Suspects in game are : '),
-    write_ln(L1),
-    write_ln('Possible Suspect answers as of now are : '),
-    findall(Y,possibleSuspect(Y),L2),
-    write_ln(L2).
+    findall((A,B,C), suspect(A,B,C), List),
+    list_empty(List, true),
+    write('The were no shown suspects so far'),
+    nl.
 
-printWeapons :-
-    write_ln('Weapons in game are : '),
-    findall(X,validWeapon(X),L1),
-    write_ln(L1),
-    write_ln('Possible Weapon answers as of now are : '),
-    findall(Y,possibleWeapon(Y),L2),
-    write_ln(L2).
-
-printAges :-
-    .
-
-printColours :-
+printSuspects :-
+    findall((A,B,C), suspect(A,B,C), List),
+    %how to do negation
+    list_empty(List, false),
+    write('All the checked suspects are here: '),
+    write(List),
+    nl.
 
 printInnocents :-
+    findall((A,B,C), innocent(A,B,C), List),
+    list_empty(List, false),
+    write('All the checked innocents are here: '),
+    write(List),
+    nl.
 
+printInnocents :-
+    findall((A,B,C), innocent(A,B,C), List),
+    list_empty(List, true),
+    write('The were no shown innocents so far'),
+    nl.
+    
 
-is_murderer(Person(X,Y,Z), Murderer(Q,W,E)) :-
-    X =:= Q,
-    Y =:= W,
-    Z =:= E.
+printAttributes :-
+    age_gender(Age),
+    colour(Colour),
+    weapon(Weapon),
+    write('Available attributes are: '),
+    nl,
+    write('Age and gender: '),
+    write(Age),
+    nl,
+    write('Colour: '),
+    write(Colour),
+    nl,
+    write('Weapon: '),
+    write(Weapon),
+    nl.
+
+is_murderer(person(X,Y,Z)) :-
+    murderer(X,Y,Z).
+    
+%TODO implement make guess
+make_guess(Person) :-
+    is_murderer(Person),
+    write('You were right!'),
+    menu.
 
 make_guess(Person) :-
-    is_murderer(Person,findall)
+    \+ is_murderer(Person),
+    write('You lost!'),
+    nl,
+    exit.
 
 age_gender([youngman, youngwoman, middleagedman, middleagedwoman, oldman, oldwoman]).
 colour([yellow, red,blue,green]).
 weapon([knife, gun, poison]).
 
-
-person(age_gender, colour, weapon).
 
 %People generation
 % TODO Redo people generation with variable number of attributes
@@ -181,5 +292,16 @@ guess(X, Answer).
 list_innocent(List).
 list_suspects(List).
 
+print([]).
+print_list([X]) :-
+    write(X),
+    write('.').
+print_list([X|Tail]) :-
+    write(X),
+    write(', '),
+    print_list(Tail).
 
 
+printPredicate(P) :-
+    P =.. List,
+    print_list(List).
