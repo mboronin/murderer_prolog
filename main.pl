@@ -1,16 +1,22 @@
-    :- use_module(library(random)).
-
-
 /* Some TODOs
-Print all the possible options for guessing in the beggining of the game
 How to do loops in prolog
 Cuts in prolog
 If conditions in prolog
 What is dynamic, how to save global variables, like murderer.
-
-
+!!Generate lists of suspects and innocents!!
+Check if the person is innocent or suspect?
+Learn how to write tests
+Tests!
+Input design, like game console design
+Generate a suspect or innocent once we are asked and put them into a list
+Prevent the faults.
+Assert the murderer to the 
+Show the number of tries in the end
+Store only murderers attributes, not the murderer itself
 */
 
+
+:- use_module(library(random)).
 
 % Include the necessary predicates.
 :- dynamic weapon/1.
@@ -18,11 +24,8 @@ What is dynamic, how to save global variables, like murderer.
 :- dynamic age_gender/1.
 :- dynamic person/3.
 :- dynamic murderer/3.
-
-init :-
-:- dynamic age_gender/1.
-    write(‘Welcome to the game! Let’s find the murderer!’),
-    generate_people(List).
+:- dynamic innocent/3.
+:- dynamic suspect/3.
 
 instructions :-
     write('Rule introduction - A person was murdered, and the murderer hides in the list of following people as a secret until the end of game. 
@@ -32,22 +35,24 @@ instructions :-
     write('Yes, I get it! - Select 1'),nl,
     write('No, I haven\'t known the rule clearly. - Select 2'),nl,
     %TODO Print all the possible options, like three lists
-start :-
+
+init :-
     instructions,
     read(Choice),
-    % we need a cut to leave the game.
-    continue(Choice),
+    start(Choice).
+
+start(X) :-
+    X =:= 1,
+    play.
+
+start(X) :-
+    X =:= 2,
+    exit.
+
+exit :-
+    write('You decided to exit the game! See you next time!')
 
 
-age_gender([youngman, youngwoman, middleagedman, middleagedwoman, oldman, oldwoman]).
-colour([yellow, red,blue,green]).
-weapon([knife, gun, poison]).
-
-
-person(age_gender, colour, weapon).
-
-%People generation
-% TODO Redo people generation with variable number of attributes
 generate_people(List):-
     age_gender(Age),
     colour(Colour),
@@ -60,27 +65,44 @@ generate_people(List):-
     true.
 
 % Program selects random person from all the combinations and makes him a murderer
-select_murderer(List, Person) :-
-    random_member(M, List),
-    M = Person.
+select_murderer :-
+    %How to find person 
+    findall(person(A,B,C), person(A,B,C), List),
+    random_member(M(A,B,C), List),
+    A = Param1,
+    B = Param2,
+    C = Param3,
+    assertz(murderer(Param1,Param2,Param3)).
 
+play :-
+    generate_people(List),
+    select_murderer
+    menu.
 
 % TODO TO MAKE A GUESS?
 % Menu gives player an opportunity to select the right action
 menu :- repeat,
-    write('=========================='),nl,
+    write('======================================'),nl,
     write('To ask for a new clue - Select 1'),nl,
     write('To guess the murderer - Select 2'),nl,
     write('To view the last clue - Select 3'),nl,
     write('To view all suspects - Select 4'),nl,
     write('To view all innocents - Select 5'),nl,
     write('To exit the game - Select 6'),nl,
-    write('==========================',),nl,
+    write('======================================',),nl,
     write('Enter your choice here: '),
     read(Choice), Choice>0, Choice =<6,
     % What is cut doing here? is this one repeating?
     doit(Choice), Choice=6, !.
 
+%Get only one
+get_clue :-
+    person(X,Y,Z),
+    !,
+    innocent_or_suspect(X,Y,Z).
+
+innocent_or_suspect(X,Y,Z) :-
+    findall(person, person(A,B,C))
 
 % TODO Implement all the actions
 doit(1) :-
@@ -95,7 +117,7 @@ doit(2) :-
     nl,
     write('Input the third parameter for your guess: '),
     read(Param3), 
-    nl
+    nl,
     make_guess(Person(Param1, Param2, Param3)).
     %TODO If make guess is true, then success
 doit(3) :-
@@ -107,24 +129,9 @@ doit(5) :-
 doit(6) :-
     %TODO Find out how to exit the game
 
-get_new_person(X) :-
-
-    %keep track of tries
-guess(X, Answer). 
-list_innocent(List).
-list_suspects(List).
-
-make_guess(Person) :-
-    Person =:= Murderer.
 
 
-
-murderer(person(age_gender, colour, weapon)) :-
-    age_gender =:= murderer_age,
-    colour =:= murderer_colour,
-    weapon =:= murderer_weapon.
-
-%TODO Printing all attributes, regarding the names.
+%TODO Printing all attributes, regarding the names in the begining
 printSuspects :-
     findall(X,validSuspect(X),L1),
     write_ln('Suspects in game are : '),
@@ -148,5 +155,31 @@ printColours :-
 
 printInnocents :-
 
-    
+
+is_murderer(Person(X,Y,Z), Murderer(Q,W,E)) :-
+    X =:= Q,
+    Y =:= W,
+    Z =:= E.
+
+make_guess(Person) :-
+    is_murderer(Person,findall)
+
+age_gender([youngman, youngwoman, middleagedman, middleagedwoman, oldman, oldwoman]).
+colour([yellow, red,blue,green]).
+weapon([knife, gun, poison]).
+
+
+person(age_gender, colour, weapon).
+
+%People generation
+% TODO Redo people generation with variable number of attributes
+
+get_new_person(X) :-
+
+    %keep track of tries
+guess(X, Answer). 
+list_innocent(List).
+list_suspects(List).
+
+
 
