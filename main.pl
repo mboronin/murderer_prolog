@@ -403,4 +403,10 @@ read_input(Prompt, Value, CheckPred, ErrorMsg) :-
             fail
         ).
 
+/*
+@descr Service function to print murderer
+*/
+printMurderer :-
+    findall((X,Y,Z), murderer(X,Y,Z),List),
+    print_list(List).
 
