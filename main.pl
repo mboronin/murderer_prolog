@@ -1,19 +1,11 @@
 /* Some TODOs
 How to do loops in prolog
 Cuts in prolog
-If conditions in prolog
-What is dynamic, how to save global variables, like murderer.
-!!Generate lists of suspects and innocents!!
-Check if the person is innocent or suspect?
 Learn how to write tests
 Tests!
 Input design, like game console design
-Generate a suspect or innocent once we are asked and put them into a list
 Prevent the faults.
-Assert the murderer to the 
 Show the number of tries in the end
-Store only murderers attributes, not the murderer itself
-
 */
 :- use_module(library(random)).
 
@@ -42,7 +34,8 @@ instructions :-
     write('===    the murder is. A person is considered a \'suspect\'    ==='),nl,
     write('===    if at least one attribute matches of the murderer.     ==='),nl,
     write('===    A person is considered to an \'innocent\' if at        ==='),nl,
-    write('===    no attributes matches the murderer\'s                  ==='),
+    write('===    no attributes matches the murderer\'s                  ==='),nl,
+	write('================================================================='),
     nl,
     %printing all the possible attributes
     generate_people,
@@ -57,6 +50,9 @@ list_empty([_|_], false).
 
 
 init :-
+	retractall(clues(X)),
+	assert(clues(0)),
+	%TODO Check for incorrect input
     retractall(person(X,Y,Z)),
     retractall(innocent(X,Y,Z)),
     retractall(suspect(X,Y,Z)),
@@ -83,9 +79,8 @@ exit_before_start :-
 
 exit :-
     write('You have got '),
-    findall((X,Y,Z), (innocent(X,Y,Z); suspect(X,Y,Z)), List),
-    count(List, Num),
-    write(Num),
+    clues(X),
+	write(X),
     write(' number of clues'),
     nl,
     write('We are ending the game now. See you next time!'),
@@ -111,7 +106,7 @@ generate_people :-
     true.
 
 remove(latest(P)) :-
-    retract(latest(P)) ; retractall(latest(P)).
+    retractall(latest(P));retract(latest(P)).
 
 
 % Program selects random person from all the combinations and makes him a murderer
@@ -128,6 +123,7 @@ play :-
 % TODO TO MAKE A GUESS?
 % Menu gives player an opportunity to select the right action
 menu :- repeat,
+	%TODO Check for incorrect input
     write('======================================'),nl,
     write('To ask for a new clue - Select 1'),nl,
     write('To guess the murderer - Select 2'),nl,
@@ -150,22 +146,26 @@ get_clue :-
     write(person(X,Y,Z)),
     write(' - '),
     write(Message),nl,
+	clues(Q),
+	retract(clues(Q)),
+	W is Q+1,
+	assert(clues(W)),
     retract(person(X,Y,Z)).
 
 
 innocent_or_suspect(X,Y,Z, 'Suspect') :-
     murderer(Q,W,E),
     (X == Q; Y == W; Z==E),
-    assert(suspect(X,Y,Z)),
-    remove(latest(P)).
-    assert(latest(suspect(X,Y,Z))).
+    remove(latest(P)),
+    assert(latest(suspect(X,Y,Z))),
+	assert(suspect(X,Y,Z)).
 
 innocent_or_suspect(X,Y,Z, 'Innocent') :-
     murderer(Q,W,E),
     X \== Q, Y \== W, Z\==E,
-    assert(innocent(X,Y,Z)),
     remove(latest(P)),
-    assert(latest(innocent(X,Y,Z))).
+    assert(latest(innocent(X,Y,Z))),
+	assert(innocent(X,Y,Z)).
 
 
 % TODO Implement all the actions
@@ -173,6 +173,7 @@ doit(1) :-
     get_clue,
     menu.
 doit(2) :-
+	%TODO Check for incorrect input
     % TODO Make it variable arguements
     %TODO Make go back
     write('Input the first parameters for your guess: '),
@@ -204,7 +205,8 @@ doit(3) :-
     %TODO printPredicate funiction
     %TODO fix printing correct answer.
     latest(P),
-    printPredicate(P),
+	P =.. List,
+    print_list(List),
     nl.
 doit(4) :-
     printSuspects,
@@ -285,22 +287,17 @@ weapon([knife, gun, poison]).
 %People generation
 % TODO Redo people generation with variable number of attributes
 
-get_new_person(X) :-
 
-    %keep track of tries
+%keep track of tries
 guess(X, Answer). 
 list_innocent(List).
 list_suspects(List).
 
-print([]).
-print_list([X]) :-
-    write(X),
-    write('.').
+print_list([]).
 print_list([X|Tail]) :-
     write(X),
     write(', '),
     print_list(Tail).
-
 
 printPredicate(P) :-
     P =.. List,
