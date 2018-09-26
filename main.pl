@@ -116,11 +116,15 @@ check_guess_reply(GuessReply) :-
     (member(GuessReply,Age);member(GuessReply,Colour);member(GuessReply,Weapon)).
 
 /*
-@descr General exit function, lists the number of clues
+@descr General exit function, lists the number of clues and the actual murderer
 @date 23/09/2018
 */
 exit :-
-    write('You have got '),
+    write('The murderer is '),
+    findall((X,Y,Z), murderer(X,Y,Z), List),
+    print_list(List),
+    nl,
+    write('You have used '),
     clues(X),
 	write(X),
     write(' number of clues'),
