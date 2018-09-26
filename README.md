@@ -1,7 +1,7 @@
-## Murdereer game
+## Murderer game
 Project contains the group assignment for the Declarative Problem Solving methods course.  
 The Murderer game consists of simple console UI and a game.  
-The project includes tests as well. 
+Tests can be found in test.pl.
 
 ### Run  
 The file main should be consulted into the memory before the start.   
