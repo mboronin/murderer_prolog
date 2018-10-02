@@ -1,4 +1,13 @@
 /*
+TODO 
+Incorrect input with commas
+Incorrect input with several words
+Improve testing
+Make counter of clues simplier
+Listing of suspects and innocents
+*/
+
+/*
 To start the program type 'start.'
 To test the program consult this file, and then run consult test.pl
 To run tests use 'test1.' 'test2.' etc.
@@ -16,9 +25,6 @@ To run tests use 'test1.' 'test2.' etc.
 @date 23/09/2018
 @author Mikhail Boronin
  */
-:- dynamic weapon/1.
-:- dynamic colour/1.
-:- dynamic age_gender/1.
 :- dynamic person/3.
 :- dynamic murderer/3.
 :- dynamic innocent/3.
@@ -190,6 +196,73 @@ innocent_or_suspect(X,Y,Z, 'innocent') :-
     assert(latest(innocent(X,Y,Z))),
 	assert(innocent(X,Y,Z)).
 
+/*
+@descr Check if the pesron is murderer
+@date 23/09/2018
+@author Mikhail Boronin
+ */
+is_murderer(person(X,Y,Z)) :-
+    murderer(X,Y,Z).
+    
+/*
+@descr Making a guess, output depends on being right or not
+@param Person Actual person, which will be guessed
+@date 23/09/2018
+@author Mikhail Boronin
+ */
+make_guess(Person) :-
+    is_murderer(Person),
+    write('Congratulations! You were right!'),
+    nl,
+    exit.
+
+make_guess(Person) :-
+    \+ is_murderer(Person),
+    write('You lost!'),
+    nl,
+    exit.
+
+/*
+@descr Printing the lists in more natural way
+@param List to be printed
+@date 23/09/2018
+@author Mikhail Boronin
+ */
+print_list([]).
+print_list([X|Tail]) :-
+    write(X),
+    write(', '),
+    print_list(Tail).
+
+/*
+@descr Printing predicates
+@param Predicate to be printed
+@date 23/09/2018
+@author Mikhail Boronin
+ */
+printPredicate(P) :-
+    P =.. List,
+    list_empty(List, false),
+    List = [X|Tail],
+    print_list(Tail),
+    write(' - '),
+    write(X),
+    nl.
+
+/*
+@descr Service function to print murderer
+@author Mikhail Boronin
+ */
+printMurderer :-
+    findall((X,Y,Z), murderer(X,Y,Z),List),
+    print_list(List).
+
+/*
+@descr Prints latest clue
+@date 23/09/2018
+@author Mikhail Boronin
+*/
+
 printLatest :-
     clues(X),
     X > 0,
@@ -257,64 +330,3 @@ printAttributes :-
     write('Weapon: '),
     write(Weapon),
     nl.
-
-/*
-@descr Check if the pesron is murderer
-@date 23/09/2018
-@author Mikhail Boronin
- */
-is_murderer(person(X,Y,Z)) :-
-    murderer(X,Y,Z).
-    
-/*
-@descr Making a guess, output depends on being right or not
-@param Person Actual person, which will be guessed
-@date 23/09/2018
-@author Mikhail Boronin
- */
-make_guess(Person) :-
-    is_murderer(Person),
-    write('Congratulations! You were right!'),
-    nl,
-    exit.
-
-make_guess(Person) :-
-    \+ is_murderer(Person),
-    write('You lost!'),
-    nl,
-    exit.
-
-/*
-@descr Printing the lists in more natural way
-@param List to be printed
-@date 23/09/2018
-@author Mikhail Boronin
- */
-print_list([]).
-print_list([X|Tail]) :-
-    write(X),
-    write(', '),
-    print_list(Tail).
-
-/*
-@descr Printing predicates
-@param Predicate to be printed
-@date 23/09/2018
-@author Mikhail Boronin
- */
-printPredicate(P) :-
-    P =.. List,
-    list_empty(List, false),
-    List = [X|Tail],
-    print_list(Tail),
-    write(' - '),
-    write(X),
-    nl.
-
-/*
-@descr Service function to print murderer
-@author Mikhail Boronin
- */
-printMurderer :-
-    findall((X,Y,Z), murderer(X,Y,Z),List),
-    print_list(List).

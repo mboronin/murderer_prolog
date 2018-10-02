@@ -30,7 +30,7 @@ instructions :-
     printAttributes,
     write('Clear now? '), nl,
     write('Yes, I get it! - Select 1'),nl,
-    write('No, I haven\'t known the rule clearly. - Select 2'),
+    write('No, I haven\'t understood the rule clearly. I want to exit the game - Select 2'),
     nl.
 
 
